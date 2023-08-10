@@ -1,0 +1,202 @@
+# переменные 
+#  substitutions:
+#    devicename: livingroom # спользования $devicename или ${devicename}
+
+# Название устройства и тип микроконтроллера
+esphome:
+  name: $name
+  friendly_name: $friendly_name
+#  name_add_mac_suffix: true # Автоматически добавлять mac адрес к имени чтобы можно было использовать одну прошивку для всех устройств
+  project: # Это позволит (будущую) идентификацию проекта,
+    name: esphome.project-template
+    version: "1.0" # конфигурация и обновления.
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# ////////////////////////////////////////
+# ///// начало не изменяемая часть ///////
+# ////////////////////////////////////////
+# Включить ведение журнала
+logger:
+# Включить API Home Assistant (нужно для подтверждения подключения)
+api:
+  encryption:
+    key: !secret API #
+#пароль для обновления по воздуху
+ota:
+  password: !secret OTA #
+# подключения к домашней wifi сети
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ##настройка статического IP адреса
+  #manual_ip:
+  #  # IP адрес ESP модуля
+  #  static_ip: 192.168.0.151
+  #  # IP адрес можема/роутера
+  #  gateway: 192.168.0.1
+  #  # Маска подсети
+  #  subnet: 255.255.255.0
+
+  # Включить резервную точку доступа (портал авторизации) на случай сбоя подключения к Wi-Fi.
+  ap:
+    ssid: ${name}
+    password: !secret AP
+#
+captive_portal:
+# веб морда
+web_server:
+
+ # перезагрузка узла
+button:
+  - platform: restart 
+    name: "Перезагрузка"
+    entity_category: config 
+# //////////////////////////
+# конец не изменяемой части
+# //////////////////////////
+# начало изменяемой части
+# //////////////////////////
+
+# переменные 
+substitutions: # спользования $devicename или ${devicename}
+  name: esp32-01-kuxn
+  friendly_name: esp32-01-kuxn
+
+# //////////////////////////
+# конец изменяемой части
+# //////////////////////////
+
+
+
+# бинарные датчики
+binary_sensor:
+  # Датчик движения HC-SR501
+  - platform: gpio
+    pin:
+      number: 23 # Номер пина, к которому подключен датчик движения
+      mode: INPUT_PULLUP # Режим ввода пина
+      inverted: true # Инвертирование состояния пина
+    name: "Motion Sensor" # Название датчика движения
+    device_class: motion # Класс устройства
+    icon: "mdi:motion-sensor" # Иконка устройства
+#  # микроволновой датчик движения RCWL-0516 
+#  - platform: gpio
+#    pin:
+#      number: 23 # Номер пина, к которому подключен датчик движения
+#      mode: INPUT_PULLUP # Режим ввода пина
+#      inverted: true # Инвертирование состояния пина
+#    name: "Motion Sensor" # Название датчика движения
+#    device_class: motion # Класс устройства
+#    icon: "mdi:motion-sensor" # Иконка устройства
+
+# Геркон
+  - platform: gpio
+    
+    name: "Sensor 1" # Название геркона
+    pin:
+      number: 33 # Номер пина, к которому подключен геркон
+      mode:
+       input: true
+       pullup: true
+    device_class: door # Класс устройства
+    icon: "mdi:door" # Иконка устройства
+
+  - platform: gpio
+    name: "Sensor 2" # Название геркона
+    pin: 
+      number: 26 # Номер пина, к которому подключен геркон
+      mode:
+       input: true
+       pullup: true
+    device_class: door # Класс устройства
+    icon: "mdi:door" # Иконка устройства
+
+  - platform: gpio
+    name: "Sensor 3" # Название геркона
+    pin: 
+      number: 27 # Номер пина, к которому подключен геркон
+      mode:
+       input: true
+       pullup: true
+    device_class: door # Класс устройства
+    icon: "mdi:door" # Иконка устройства
+
+  - platform: gpio
+    name: "Sensor 4" # Название геркона
+    pin: 
+      number: 14 # Номер пина, к которому подключен геркон
+      mode:
+       input: true
+       pullup: true
+    device_class: door # Класс устройства
+    icon: "mdi:door" # Иконка устройства
+
+  - platform: gpio
+    name: "Sensor 5" # Название геркона
+    pin: 
+      number: 12 # Номер пина, к которому подключен геркон16
+      mode:
+       input: true
+       pullup: true
+    device_class: door # Класс устройства
+    icon: "mdi:door" # Иконка устройства
+
+# Настройка датчика прикосновения TTP223
+  - platform: gpio
+    pin:
+      number: 25
+      mode: INPUT_PULLUP
+      inverted: false # true
+    name: "Датчик прикосновения"
+#    device_class: touch
+
+
+# Датчик температуры и влажности AM2302
+sensor:
+  - platform: dht
+    pin: 21 # Номер пина, к которому подключен датчик
+    model: AM2302 # Модель датчика
+    temperature:
+      name: "Temperature" # Название датчика температуры
+      icon: "mdi:thermometer" # Иконка датчика температуры
+    humidity:
+      name: "Humidity" # Название датчика влажности
+      icon: "mdi:water-percent" # Иконка датчика влажности
+
+
+
+
+# переключатели
+switch:
+# Свет 
+  - platform: gpio
+    name: "1Light"
+    pin: 
+      number: 19
+    
+
+  - platform: gpio
+    name: "2Light"
+    pin: 
+      number: 18
+
+  - platform: gpio
+    name: "3Light"
+    pin: 
+      number: 05
+
+
+  - platform: gpio
+    name: "4Light"
+    pin: 
+      number: 17
+
+  - platform: gpio
+    name: "5Light"
+    pin: 
+      number: 16

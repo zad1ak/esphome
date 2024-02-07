@@ -1,0 +1,220 @@
+# названия устройства
+esphome:
+  name: "esp32-02-ble"
+  friendly_name: esp32_ble
+#названия устойства
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# ////////////////////////////////////////
+# ///// начало не изменяемая часть ///////
+# ////////////////////////////////////////
+# ///// Хорошие статьи https://kotyara12.ru/iot/esp32pinout/
+# ////////////////////////////////////////
+# Включить ведение журнала
+logger:
+# Включить API Home Assistant (нужно для подтверждения подключения)
+api:
+  encryption:
+    key: !secret API #
+#пароль для обновления по воздуху
+ota:
+  password: !secret OTA #
+# подключения к домашней wifi сети
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Включить резервную точку доступа (портал авторизации) на случай сбоя подключения к Wi-Fi.
+  ap:
+    ssid: ${name}
+    password: !secret AP
+#
+captive_portal:
+# веб морда
+web_server:
+# //////////////////////////
+# конец не изменяемой части
+# //////////////////////////
+# начало изменяемой части
+# //////////////////////////
+
+# переменные 
+#substitutions: # спользования $devicename или ${devicename}
+#  name: esp32-01-kuxn
+#  friendly_name: esp32-01
+
+# резерв или образ на github, изменяя его на сайте прилетает обновления 
+#dashboard_import:
+#  package_import_url: github://zad1ak/esphome/esp32-01-kuxn.yaml
+
+button:
+  - platform: restart # перезагрузка узла
+    name: "Перезагрузка"
+    entity_category: config
+
+esp32_ble_tracker:
+  scan_parameters:
+
+    active: false
+
+# включения I2C Шины 
+i2c:
+  sda: GPIO23 # D23 (sda GPIO012 - D6) esp32 (sda GPIO23/21/33/27 - D23) wemos (sda GPIO05 - D1 )
+  scl: GPIO22 # D22 (scl GPIO14 - D5) esp32 (scl GPIO22/32/26 - D22) wemos (scl GPIO04 - D2 )
+  scan: true # при запуске будет сканировать I2C шину если да то true
+  id: bus_a # указываем назный индификатор если I2C нестокол
+
+## включения UART Шины пины esp82 (TX GPIO? ?) (RX GPIO? ?)  esp32: (TX GPIO16 17) (RX GPIO17 16)
+#uart:
+#  tx_pin: 17
+#  rx_pin: 16
+#  baud_rate: 256000
+#  parity: NONE
+#  stop_bits: 1
+
+# //////////////////////////
+# конец изменяемой части
+# //////////////////////////
+
+binary_sensor:
+
+# Mi Smart 7 pro
+  - platform: ble_presence
+    mac_address: D0:62:2C:80:A9:A5
+    name: "Mi Smart 7 pro"
+
+  - platform: ble_presence
+    mac_address: E0:CC:F8:F2:BE:ED
+    name: "Xaomi Redmi Note 9 Pro"
+
+
+# датчик присутствяи RCWL-0516 (3.2-3.4В)
+  - platform: gpio 
+    pin: # http://psenyukov.ru/самый-дешевый-микроволновой-датчик-д/
+      number: GPIO5
+    name: "присутствия кухня" # названия датчика
+    device_class: motion # какой класс устройства
+
+
+# датчик движения HC-SR501 (4.5-20 В)
+  - platform: gpio 
+    pin: # 
+      number: GPIO17
+    name: "движения кухня" # названия датчика
+    device_class: motion # какой класс устройства
+
+
+#датчики открытия дверей
+
+  - platform: gpio
+    pin:
+      number: GPIO12 # какой пин используется 
+      mode: INPUT_PULLUP # вход с подтягивающим резистором
+      inverted: false # true - пишет что закрыт,  false - открыто
+    name: "Door_contact1" # как он будет отоброжатся 
+    device_class: door # тип датчика в данном случае дверь
+
+  - platform: gpio
+    pin:
+      number: GPIO14 # какой пин используется 
+      mode: INPUT_PULLUP # вход с подтягивающим резистором
+      inverted: false # true - пишет что закрыт,  false - открыто
+    name: "Door_contact2" # как он будет отоброжатся 
+    device_class: door # тип датчика в данном случае дверь
+
+  - platform: gpio
+    pin:
+      number: GPIO27  # какой пин используется 
+      mode: INPUT_PULLUP # вход с подтягивающим резистором
+      inverted: false # true - пишет что закрыт,  false - открыто
+    name: "Door_contact3" # как он будет отоброжатся 
+    device_class: door # тип датчика в данном случае дверь
+    
+  - platform: gpio
+    pin:
+       number: GPIO26 # какой пин используется 
+       mode: INPUT_PULLUP # вход с подтягивающим резистором
+       inverted: false # true - пишет что закрыт,  false - открыто
+    name: "Door_contact4" # как он будет отоброжатся 
+    device_class: door # тип датчика в данном случае дверь
+
+  - platform: gpio
+    pin:
+       number: GPIO25 # какой пин используется 
+       mode: INPUT_PULLUP # вход с подтягивающим резистором
+       inverted: false # true - пишет что закрыт,  false - открыто
+    name: "Door_contact5" # как он будет отоброжатся 
+    device_class: door # тип датчика в данном случае дверь
+ 
+sensor:
+#Датчик температуры и давления bmp280  (1.71 – 3.6В)
+  - platform: bmp280 # https://esphome.io/components/sensor/bmp280.html?highlight=bmp280
+    temperature: #информация для датчика температуры.
+      name: "Температура" # имя датчика температуры
+#      oversampling: 16x # параметр передискретизации для датчика температуры
+#      id:  # установите идентификатор этого датчика для использования в лямбдах.
+    pressure: # информация для датчика давления
+      name: "Давления" # Имя датчика Давлении
+#      oversampling:  # параметр передискретизации для датчика давления
+#      id:  # установите идентификатор этого датчика для использования в лямбдах
+    address: 0x76 # вручную укажите адрес I?C датчика. По умолчанию 0x77.
+#    iir_filter (Optional):  # установите фильтр бесконечной импульсной характеристики для повышения точности. Один из OFF, 2x, 4x, 16x. По умолчанию OFF.
+    update_interval: 60s # интервал проверки датчика. По умолчанию 60s.
+
+# датчик температуры и влажности  (3.3-5В)
+  - platform: dht
+    pin: GPIO16 # 
+    model: AUTO_DETECT #AUTO_DETECT AM2302
+    temperature:
+      name: "Температура " #"Температур"
+    humidity:
+      name: "Влажность" #"Влажность"
+    update_interval: 60s
+
+
+# датчик освещености GL5528  (3.3V-5В)
+  - platform: adc
+    pin: GPIO 36
+    name: "Освещеность"
+    update_interval: '5s'
+    unit_of_measurement: lux
+    filters: # https://community.home-assistant.io/t/ky-018-lux-measurement-in-esphome/126274/15
+      - lambda: |-
+          return (x / 10000.0) * -2000000.0 + 200; 
+
+#          return (x / 10000.0) * 2000000.0; # это была
+#педключения реле
+switch:
+  - platform: gpio
+    pin:
+      number: GPIO1 
+      inverted: true
+    name: "Р1 Крупы и специи" #
+    icon: mdi:power
+  - platform: gpio
+    pin:
+      number: GPIO3 
+      inverted: true
+    name: "Р2 Стаканы и Фужеры"  #
+    icon: mdi:power
+  - platform: gpio
+    pin:
+      number: GPIO21
+      inverted: true
+    name: "Р3 Хлебница" #
+    icon: mdi:power
+  - platform: gpio
+    pin:
+      number: GPIO19
+      inverted: true
+    name: "Р4 Посуда" #
+    icon: mdi:power
+  - platform: gpio
+    pin:
+      number: GPIO18
+      inverted: true
+    name: "Р5 столешница" #
+    icon: mdi:power

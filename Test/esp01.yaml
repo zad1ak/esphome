@@ -1,0 +1,117 @@
+esphome:
+  name: esp01
+  friendly_name: esp01
+
+esp8266:
+  board: esp01_1m
+
+# ////////////////////////////////////////
+# ///// начало не изменяемая часть ///////
+# ////////////////////////////////////////
+# Включить ведение журнала
+logger:
+# Включить API Home Assistant (нужно для подтверждения подключения)
+api:
+  encryption:
+    key: !secret API #
+#пароль для обновления по воздуху
+ota:
+  password: !secret OTA #
+# подключения к домашней wifi сети
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Включить резервную точку доступа (портал авторизации) на случай сбоя подключения к Wi-Fi.
+  ap:
+    ssid: ${name}
+    password: !secret AP
+#
+captive_portal:
+# веб морда
+web_server:
+
+button:
+  - platform: restart # перезагрузка узла
+    name: "Перезагрузка"
+    entity_category: config  
+# //////////////////////////
+# конец не изменяемой части
+# //////////////////////////
+# начало изменяемой части
+# //////////////////////////
+
+# переменные 
+#substitutions: # спользования $devicename или ${devicename}
+#  name: esp32-01-kuxn
+#  friendly_name: esp32-01-kuxn
+
+# включения I2C Шины 
+#i2c:
+#  sda: GPIO4 # esp8266 (sda GPIO012 - D6) esp32 (sda GPIO23/21/33/27 - D23) wemos (sda GPIO05 - D1 )
+#  scl: GPIO5 # esp8266 (scl GPIO14 - D5) esp32 (scl GPIO22/32/26 - D22) wemos (scl GPIO04 - D2 )
+#  scan: true # при запуске будет сканировать I2C шину если да то true
+#  id: bus_a # указываем назный индификатор если I2C нестокол
+
+## включения UART Шины пины esp82 (TX GPIO? ?) (RX GPIO? ?)  esp32: (TX GPIO16 17) (RX GPIO17 16)
+#uart:
+#  tx_pin: 17
+#  rx_pin: 16
+#  baud_rate: 256000
+#  parity: NONE
+#  stop_bits: 1
+
+
+
+# //////////////////////////
+# конец изменяемой части
+# //////////////////////////
+
+##################### код взят с ютуба https://www.youtube.com/watch?v=W6zkxnmmznI&list=WL&index=36&ab_channel=pyctech
+ #Turn 90°
+#button:
+  - platform: template
+    name: "Turn 90°"
+    on_press:
+      then:
+          - logger.log: Button Pressed
+          - stepper.report_position:
+              id: my_stepper
+              position: 0          
+          - stepper.set_target:
+              id: my_stepper
+              target: 500
+
+# Example configuration entry
+stepper:
+  - platform: uln2003
+    id: my_stepper
+    pin_a: GPIOXX
+    pin_b: GPIOXX
+    pin_c: GPIOXX
+    pin_d: GPIOXX
+    max_speed: 250 steps/s
+
+    # Optional:
+    acceleration: inf
+    deceleration: inf
+    sleep_when_done: True
+
+
+cover:
+  - platform: template
+    name: "Template Cover"
+    open_action:  
+      - stepper.set_target:
+          id: my_stepper
+          target: 2000
+    close_action:
+      - stepper.set_target:
+          id: my_stepper
+          target: 0
+    stop_action:   
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda |-
+            return id(my_stepper).current_position;
+    optimistic: true

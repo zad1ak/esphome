@@ -1,0 +1,67 @@
+esphome:
+  name: esp8266-16
+  friendly_name: esp8266-16
+
+esp8266:
+  board: esp01_1m
+
+# ////////////////////////////////////////
+# ///// начало не изменяемая часть ///////
+# ////////////////////////////////////////
+# Включить ведение журнала (https://esphome.io/components/logger.html)
+logger:
+# Включить API Home Assistant (нужно для подтверждения подключения)(https://esphome.io/components/api.html)
+api:
+  encryption:
+    key: !secret API #
+#пароль для обновления по воздуху (https://esphome.io/components/ota.html)
+ota:
+  password: !secret OTA #
+# подключения к домашней wifi сети (https://esphome.io/components/wifi.html)
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Включить резервную точку доступа (портал авторизации) на случай сбоя подключения к Wi-Fi.
+  ap:
+    ssid: ${name}
+    password: !secret AP
+# (https://esphome.io/components/captive_portal.html)
+captive_portal:
+# веб морда (https://esphome.io/components/web_server.html)
+web_server:
+# //////////////////////////
+# конец не изменяемой части
+# //////////////////////////
+
+
+# включения i2c (https://esphome.io/components/i2c.html#i2c-bus)
+i2c:
+   - id: bus_a # уникальное имя для для 1 шины (нужно проверить сколько шин поддерживает плата esp8266 = 1шт, esp32 = 2шт)
+     sda: GPIO5 #Контакт для линии данных шины I²C (обычно GPIO21 для ESP32 и GPIO4 для ESP8266)
+     scl: GPIO4 #вывод для тактовой линии шины I²C (обычно GPIO22 для ESP32 и GPIO5 для ESP8266)
+     scan: true #поиск в адресном пространстве I²C при запуске
+#     frequency: 100kHz #частота на которой будет работать шина I²C
+## для использования 2 устройства на шине 
+#   - id: bus_b #уникальное имя для для 2 шины I²C
+#     sda: GPIO5 #Контакт для линии данных шины I²C (обычно GPIO21 для ESP32 и GPIO4 для ESP8266)
+#     scl: GPIO4 #вывод для тактовой линии шины I²C (обычно GPIO22 для ESP32 и GPIO5 для ESP8266)
+#     scan: true #поиск в адресном пространстве I²C при запуске
+#     frequency: 100kHz #частота на которой будет работать шина I²C
+
+# (https://esphome.io/components/sx1509.html?highlight=sx1509)
+sx1509: # модель платы расширения
+  - id: sx1509_1 # названия которое будет использоваться в дальнейшем
+    address: 0x3E # адрес платы
+#
+switch:
+  - platform: gpio
+#    id: led1 # названия и быстрого обращения
+    name: "SX1509 Pin #1" # названия пина
+    pin: #
+      sx1509: sx1509_1 # ( Обязательный , ID )Идентификаторкомпонента вывода SX1509 
+      number: 1 #( Обязательный , int) Используйте контакт номер 1 на SX1509.
+      mode: #  использовать как выход для переключателя
+        output: true # ( необязательно , строка) режим вывода, который необходимо установить для вывода. Один из INPUT, INPUT_PULLUPили OUTPUT.
+      inverted: false # (необязательный , логический) если все читаемые и записываемые значения следует рассматривать как инвертированные. По умолчанию false
+

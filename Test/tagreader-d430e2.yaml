@@ -1,0 +1,15 @@
+substitutions:
+  name: tagreader-d430e2
+packages:
+  adonno.tag_reader: github://adonno/tagreader/tagreader.yaml
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+api:
+  encryption:
+    key: Q/d+D6X6J7Ckj9DlMf0oHHERzO8EMaP0WaNsy7N7Cdk=
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password

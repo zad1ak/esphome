@@ -1,0 +1,86 @@
+esphome:
+  name: stape-moto
+  friendly_name: stape moto
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "EtIY9pEoGp42DDJrnTuAL8LSHYXqeCARuukHLuqkrlk="
+
+ota:
+  - platform: esphome
+    password: "1047eab2fdebad907349088cf7afbfc3"
+
+wifi:
+  ssid: BRV2
+  password: BrV12345
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Stape-Moto Fallback Hotspot"
+    password: "mt1zfyy0LQ1m"
+
+captive_portal:
+    
+web_server:
+
+#ESP32 --- ULN2003
+#GND   --- -
+#VIN   --- +
+#D27   --- IN1
+#D26   --- IN2
+#D25   --- IN3
+#D13   --- IN4
+
+#Stepper motor:
+stepper:
+  - platform: uln2003
+    id: my_stepper
+    pin_a: GPIO16
+    pin_b: GPIO5
+    pin_c: GPIO4
+    pin_d: GPIO0
+    max_speed: 500 steps/s
+
+    #Optional:
+    acceleration: inf
+    deceleration: inf
+    sleep_when_done: True
+
+#Turn 90°
+button:
+  - platform: template
+    name: "Turn 90°"
+    on_press:
+      then:
+          - logger.log: Button Pressed
+          - stepper.report_position:
+              id: my_stepper
+              position: 0          
+          - stepper.set_target:
+              id: my_stepper
+              target: 5000
+ 
+cover:
+  - platform: template
+    name: "Template Cover"
+    open_action:  
+      - stepper.set_target:
+          id: my_stepper
+          target: 16384
+    close_action:
+      - stepper.set_target:
+          id: my_stepper
+          target: 0
+    stop_action:   
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda |-
+            return id(my_stepper).current_position;
+    optimistic: true    

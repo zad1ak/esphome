@@ -1,0 +1,19 @@
+# шаблон для esphom с работой github 
+
+substitutions:
+#  name: tagreader-d430e2 # пишем назнаяния устройства
+  name:  # пишем назнаяния устройства
+packages:
+#  adonno.tag_reader: github://adonno/tagreader/tagreader.yaml  #ссылка файл github
+adonno.tag_reader:  #ссылка файл github
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false # не будет добавлен суффикс MAC-адреса
+api:
+  encryption:
+#    key: Q/d+D6X6J7Ckj9DlMf0oHHERzO8EMaP0WaNsy7N7Cdk=
+    key: !secret API # ссылка ведет на файл секюрити
+
+wifi:
+  ssid: !secret wifi_ssid # ссылка ведет на файл секюрити
+  password: !secret wifi_password # ссылка ведет на файл секюрити

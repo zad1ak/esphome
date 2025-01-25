@@ -1,217 +1,219 @@
 # названия устройства
 esphome:
-    name: kuxnya
-  #названия платформы 
-  esp8266:
-    board: nodemcuv2
+  name: kuxnya
+#названия платформы 
+esp8266:
+  board: nodemcuv2
+
+# ////////////////////////////////////////
+# /////////////// ESP8266 ////////////////
+# ////////////////////////////////////////
+# ///// начало не изменяемая часть ///////
+# ////////////////////////////////////////
+# Включить ведение журнала
+logger:
+# Включить API Home Assistant (нужно для подтверждения подключения)
+api:
+  encryption:
+    key: !secret API #
+#пароль для обновления по воздуху
+ota:
+  password: !secret OTA #
+# подключения к домашней wifi сети
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Включить резервную точку доступа (портал авторизации) на случай сбоя подключения к Wi-Fi.
+  ap:
+    ssid: ${name}
+    password: !secret AP
+#
+captive_portal:
+# веб морда
+web_server:
+
+button:
+  - platform: restart # перезагрузка узла
+    name: "Перезагрузка"
+    entity_category: config  
+# //////////////////////////
+# конец не изменяемой части
+# //////////////////////////
+# начало изменяемой части
+# //////////////////////////
+
+# переменные 
+#substitutions: # спользования $devicename или ${devicename}
+#  name: esp32-01-kuxn
+#  friendly_name: esp32-01-kuxn
+
+# включения I2C Шины 
+#i2c:
+#  sda: GPIO4 # esp8266 (sda GPIO012 - D6) esp32 (sda GPIO23/21/33/27 - D23) wemos (sda GPIO05 - D1 )
+#  scl: GPIO5 # esp8266 (scl GPIO14 - D5) esp32 (scl GPIO22/32/26 - D22) wemos (scl GPIO04 - D2 )
+#  scan: true # при запуске будет сканировать I2C шину если да то true
+#  id: bus_a # указываем назный индификатор если I2C нестокол
+
+## включения UART Шины пины esp82 (TX GPIO? ?) (RX GPIO? ?)  esp32: (TX GPIO16 17) (RX GPIO17 16)
+#uart:
+#  tx_pin: 17
+#  rx_pin: 16
+#  baud_rate: 256000
+#  parity: NONE
+#  stop_bits: 1
+
+
+
+# //////////////////////////
+# конец изменяемой части
+# //////////////////////////
+
+
+
+
+# подключения датчика температуры и вложности
+sensor:
+  - platform: dht
+    pin: D0 # или D0 GPIO16
+    model: AUTO_DETECT #AUTO_DETECT AM2302
+    temperature:
+      name: "d_T" #"Температур"
+    humidity:
+      name: "d_H" #"Влажность"
+    update_interval: 60s
+
+##Датчик температуры и давления
+#  - platform: bmp280 # https://esphome.io/components/sensor/bmp280.html?highlight=bmp280
+#    temperature: #информация для датчика температуры.
+#      name: "Температура" # имя датчика температуры
+##      oversampling: 16x # параметр передискретизации для датчика температуры
+##      id:  # установите идентификатор этого датчика для использования в лямбдах.
+#    pressure: # информация для датчика давления
+#      name: "Давления" # Имя датчика Давлении
+##      oversampling:  # параметр передискретизации для датчика давления
+##      id:  # установите идентификатор этого датчика для использования в лямбдах
+#    address: 0x76 # вручную укажите адрес I²C датчика. По умолчанию 0x77.
+##    iir_filter (Optional):  # установите фильтр бесконечной импульсной характеристики для повышения точности. Один из OFF, 2x, 4x, 16x. По умолчанию OFF.
+#    update_interval: 60s # интервал проверки датчика. По умолчанию 60s.
+
+# датчик освещености
+#  - platform: adc
+#    pin: A0
+#    name: "LUX Sensor"
+#    update_interval: '30s'
+#    unit_of_measurement: lux
+#    filters:
+#      - lambda: |-
+#          return (x / 10000.0) * 2000000.0;
+
+##педключения реле
+#switch:
+#  - platform: gpio
+#    pin:
+#      number: D1
+#      inverted: true
+#    name: "Реле 1" #"Крупы и специи"
+#    icon: mdi:power
+#  - platform: gpio
+#    pin:
+#      number: D2 
+#      inverted: false
+#    name: "Столешница" #"Стаканы и Фужеры"
+#    icon: mdi:power
+#  - platform: gpio
+#    pin:
+#      number: D3
+#      inverted: false
+#    name: "Реле 3" #"Хлебница"
+#    icon: mdi:power
+#  - platform: gpio
+#    pin:
+#      number: D4
+#      inverted: false
+#    name: "Реле 4" #"Посуда"
+#    icon: mdi:power
   
-  # ////////////////////////////////////////
-  # ///// начало не изменяемая часть ///////
-  # ////////////////////////////////////////
-  # Включить ведение журнала
-  logger:
-  # Включить API Home Assistant (нужно для подтверждения подключения)
-  api:
-    encryption:
-      key: !secret API #
-  #пароль для обновления по воздуху
-  ota:
-    password: !secret OTA #
-  # подключения к домашней wifi сети
-  wifi:
-    ssid: !secret wifi_ssid
-    password: !secret wifi_password
-  
-    # Включить резервную точку доступа (портал авторизации) на случай сбоя подключения к Wi-Fi.
-    ap:
-      ssid: ${name}
-      password: !secret AP
-  #
-  captive_portal:
-  # веб морда
-  web_server:
-  
-  button:
-    - platform: restart # перезагрузка узла
-      name: "Перезагрузка"
-      entity_category: config  
-  # //////////////////////////
-  # конец не изменяемой части
-  # //////////////////////////
-  # начало изменяемой части
-  # //////////////////////////
-  
-  # переменные 
-  #substitutions: # спользования $devicename или ${devicename}
-  #  name: esp32-01-kuxn
-  #  friendly_name: esp32-01-kuxn
-  
-  # включения I2C Шины 
-  #i2c:
-  #  sda: GPIO4 # esp8266 (sda GPIO012 - D6) esp32 (sda GPIO23/21/33/27 - D23) wemos (sda GPIO05 - D1 )
-  #  scl: GPIO5 # esp8266 (scl GPIO14 - D5) esp32 (scl GPIO22/32/26 - D22) wemos (scl GPIO04 - D2 )
-  #  scan: true # при запуске будет сканировать I2C шину если да то true
-  #  id: bus_a # указываем назный индификатор если I2C нестокол
-  
-  ## включения UART Шины пины esp82 (TX GPIO? ?) (RX GPIO? ?)  esp32: (TX GPIO16 17) (RX GPIO17 16)
-  #uart:
-  #  tx_pin: 17
-  #  rx_pin: 16
-  #  baud_rate: 256000
-  #  parity: NONE
-  #  stop_bits: 1
-  
-  
-  
-  # //////////////////////////
-  # конец изменяемой части
-  # //////////////////////////
-  
-  
-  
-  
-  # подключения датчика температуры и вложности
-  sensor:
-    - platform: dht
-      pin: D0 # или D0 GPIO16
-      model: AUTO_DETECT #AUTO_DETECT AM2302
-      temperature:
-        name: "d_T" #"Температур"
-      humidity:
-        name: "d_H" #"Влажность"
-      update_interval: 60s
-  
-  ##Датчик температуры и давления
-  #  - platform: bmp280 # https://esphome.io/components/sensor/bmp280.html?highlight=bmp280
-  #    temperature: #информация для датчика температуры.
-  #      name: "Температура" # имя датчика температуры
-  ##      oversampling: 16x # параметр передискретизации для датчика температуры
-  ##      id:  # установите идентификатор этого датчика для использования в лямбдах.
-  #    pressure: # информация для датчика давления
-  #      name: "Давления" # Имя датчика Давлении
-  ##      oversampling:  # параметр передискретизации для датчика давления
-  ##      id:  # установите идентификатор этого датчика для использования в лямбдах
-  #    address: 0x76 # вручную укажите адрес I²C датчика. По умолчанию 0x77.
-  ##    iir_filter (Optional):  # установите фильтр бесконечной импульсной характеристики для повышения точности. Один из OFF, 2x, 4x, 16x. По умолчанию OFF.
-  #    update_interval: 60s # интервал проверки датчика. По умолчанию 60s.
-  
-  # датчик освещености
-  #  - platform: adc
-  #    pin: A0
-  #    name: "LUX Sensor"
-  #    update_interval: '30s'
-  #    unit_of_measurement: lux
-  #    filters:
-  #      - lambda: |-
-  #          return (x / 10000.0) * 2000000.0;
-  
-  ##педключения реле
-  #switch:
-  #  - platform: gpio
-  #    pin:
-  #      number: D1
-  #      inverted: true
-  #    name: "Реле 1" #"Крупы и специи"
-  #    icon: mdi:power
-  #  - platform: gpio
-  #    pin:
-  #      number: D2 
-  #      inverted: false
-  #    name: "Столешница" #"Стаканы и Фужеры"
-  #    icon: mdi:power
-  #  - platform: gpio
-  #    pin:
-  #      number: D3
-  #      inverted: false
-  #    name: "Реле 3" #"Хлебница"
-  #    icon: mdi:power
-  #  - platform: gpio
-  #    pin:
-  #      number: D4
-  #      inverted: false
-  #    name: "Реле 4" #"Посуда"
-  #    icon: mdi:power
+
+# Пример записи конфигурации
+output:
+  - platform: esp8266_pwm
+    pin: D1 # "Крупы и специи"
+#    frequency: 1000 Hz
+    id: esprel1
+  - platform: esp8266_pwm
+    pin: D2 # "Столешница"
+#    frequency: 1000 Hz
+    id: esprel2
+  - platform: esp8266_pwm
+    pin: D3  # "Хлебница"
+#    frequency: 1000 Hz
+    id: esprel3    
+  - platform: esp8266_pwm
+    pin: D4 # "Посуда"
+#    frequency: 1000 Hz
+    id: esprel4
+#  - platform: esp8266_pwm
+#    pin: D # "Стаканы и Фужеры"
+##    frequency: 1000 Hz
+#    id: esprel5   
+
+# виртуальная кнопка
+light:
+  - platform: monochromatic #
+    output: esprel1 # id из output
+    name: "Крупы и специи" # названия 
+  - platform: monochromatic
+    output: esprel2 # id из output
+    name: "Столешница" # названия
+  - platform: monochromatic
+    output: esprel3 # id из output
+    name: "Хлебница" # названия
+  - platform: monochromatic
+    output: esprel4 # id из output
+    name: "Посуда" # названия
+#  - platform: monochromatic
+#    output: esprel5 # id из output
+#    name: "Стаканы и Фужеры" # названия
+
+
+
+
+#датчик движения 
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: D5
+    name: "PIR Sensor"
+    device_class: motion
+
+
+
+#датчики открытия дверей
+  - platform: gpio
+    pin:
+      number: D6
+      mode: INPUT_PULLUP
+    name: "Door_contact1"
+    device_class: door
+
+  - platform: gpio
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+    name: "Door_contact2"
+    device_class: door
+
+  - platform: gpio
+    pin:
+      number: D9 
+      mode: INPUT_PULLUP
+    name: "Door_contact3"
+    device_class: door
     
-  
-  # Пример записи конфигурации
-  output:
-    - platform: esp8266_pwm
-      pin: D1 # "Крупы и специи"
-  #    frequency: 1000 Hz
-      id: esprel1
-    - platform: esp8266_pwm
-      pin: D2 # "Столешница"
-  #    frequency: 1000 Hz
-      id: esprel2
-    - platform: esp8266_pwm
-      pin: D3  # "Хлебница"
-  #    frequency: 1000 Hz
-      id: esprel3    
-    - platform: esp8266_pwm
-      pin: D4 # "Посуда"
-  #    frequency: 1000 Hz
-      id: esprel4
-  #  - platform: esp8266_pwm
-  #    pin: D # "Стаканы и Фужеры"
-  ##    frequency: 1000 Hz
-  #    id: esprel5   
-  
-  # виртуальная кнопка
-  light:
-    - platform: monochromatic #
-      output: esprel1 # id из output
-      name: "Крупы и специи" # названия 
-    - platform: monochromatic
-      output: esprel2 # id из output
-      name: "Столешница" # названия
-    - platform: monochromatic
-      output: esprel3 # id из output
-      name: "Хлебница" # названия
-    - platform: monochromatic
-      output: esprel4 # id из output
-      name: "Посуда" # названия
-  #  - platform: monochromatic
-  #    output: esprel5 # id из output
-  #    name: "Стаканы и Фужеры" # названия
-  
-  
-  
-  
-  #датчик движения 
-  binary_sensor:
-    - platform: gpio
-      pin:
-        number: D5
-      name: "PIR Sensor"
-      device_class: motion
-  
-  
-  
-  #датчики открытия дверей
-    - platform: gpio
-      pin:
-        number: D6
-        mode: INPUT_PULLUP
-      name: "Door_contact1"
-      device_class: door
-  
-    - platform: gpio
-      pin:
-        number: D7
-        mode: INPUT_PULLUP
-      name: "Door_contact2"
-      device_class: door
-  
-    - platform: gpio
-      pin:
-        number: D9 
-        mode: INPUT_PULLUP
-      name: "Door_contact3"
-      device_class: door
-      
-    - platform: gpio
-      pin:
-         number: D10
-         mode: INPUT_PULLUP
-      name: "Door_contact4"
-      device_class: door
+  - platform: gpio
+    pin:
+       number: D10
+       mode: INPUT_PULLUP
+    name: "Door_contact4"
+    device_class: door

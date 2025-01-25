@@ -1,4 +1,4 @@
-
+# esp32_датчик присутствия
 #D  https://smarthomescene.com/diy/diy-presence-sensor-with-hi-link-ld2410-and-esp32-for-home-assistant/
 substitutions:
   name: diy-ld2410

@@ -4,7 +4,12 @@
 #Чтобы создать ссылку в формате github://, используйте следующую структуру:
 #github://<username>/<repository>/<path_to_file>
 #Для вашего случая это будет:
+#
+#https://github.com/adonno/tagreader/blob/master/tagreader.yaml
 #github://adonno/tagreader/tagreader.yaml
+#
+#https://github.com/zad1ak/esphome/blob/main/Test/We01.yaml
+#github://zad1ak/esphome/Test/We01.yaml
 #############################################################################
 
 
@@ -12,7 +17,7 @@ substitutions:
 #  name: tagreader-d430e2 # пишем назнаяния устройства
   name:  # пишем назнаяния устройства
 packages:
-#  adonno.tag_reader: github://adonno/tagreader/tagreader.yaml  #ссылка файл github
+#  adonno.tag_reader: github://zad1ak/esphome/Test/We01.yaml  #ссылка файл github
 adonno.tag_reader:  #ссылка файл github
 esphome:
   name: ${name}

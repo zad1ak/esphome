@@ -1,0 +1,286 @@
+# =========================================================
+#  kitchen.yaml — "начинка" устройства kuhnya
+#  Этот файл лежит на GitHub (публично, БЕЗ паролей/ключей)
+#  и подключается через packages: в локальном файле ESPHome.
+#
+#  Версия прошивки — меняйте при каждом обновлении логики,
+#  чтобы видеть в HA, какая версия сейчас залита.
+# =========================================================
+
+substitutions:
+  project_version: "1.0.0"
+
+# ---------- I2C шина (общая для SX1509, BME280, VEML7700) ----------
+i2c:
+  sda: D2
+  scl: D1
+  scan: true
+  id: bus_a
+
+# ---------- Расширитель пинов SX1509 ----------
+# 0-4  = герконы ящиков 1-5 (входы)
+# 5    = датчик прикосновения столешницы (вход)
+# 6-10 = MOSFET (HW-517) подсветки ящиков 1-5 (ШИМ-выходы)
+# 11   = MOSFET подсветки столешницы (ШИМ-выход)
+sx1509:
+  - id: expander
+    address: 0x3E
+
+# ---------- Глобальная переменная "текущая яркость" ----------
+# Меняется автоматически по времени суток (см. time: ниже)
+globals:
+  - id: current_brightness
+    type: float
+    restore_value: false
+    initial_value: '0.8'
+
+# ---------- Источник времени из Home Assistant ----------
+time:
+  - platform: homeassistant
+    id: ha_time
+    on_time:
+      # Утро — яркий свет
+      - seconds: 0
+        minutes: 0
+        hours: 8
+        then:
+          - globals.set:
+              id: current_brightness
+              value: '1.0'
+      # Вечер — приглушаем
+      - seconds: 0
+        minutes: 0
+        hours: 21
+        then:
+          - globals.set:
+              id: current_brightness
+              value: '0.35'
+      # Ночь — совсем тускло
+      - seconds: 0
+        minutes: 0
+        hours: 23
+        then:
+          - globals.set:
+              id: current_brightness
+              value: '0.12'
+
+# ---------- ШИМ-выходы на MOSFET-ы (через SX1509) ----------
+output:
+  - platform: sx1509
+    sx1509_id: expander
+    id: out_yashik1
+    pin: 6
+  - platform: sx1509
+    sx1509_id: expander
+    id: out_yashik2
+    pin: 7
+  - platform: sx1509
+    sx1509_id: expander
+    id: out_yashik3
+    pin: 8
+  - platform: sx1509
+    sx1509_id: expander
+    id: out_yashik4
+    pin: 9
+  - platform: sx1509
+    sx1509_id: expander
+    id: out_yashik5
+    pin: 10
+  - platform: sx1509
+    sx1509_id: expander
+    id: out_stoleshnitsa
+    pin: 11
+
+# ---------- Светильники (диммируемые) ----------
+light:
+  - platform: monochromatic
+    id: light_yashik1
+    name: "Подсветка ящика 1"
+    output: out_yashik1
+  - platform: monochromatic
+    id: light_yashik2
+    name: "Подсветка ящика 2"
+    output: out_yashik2
+  - platform: monochromatic
+    id: light_yashik3
+    name: "Подсветка ящика 3"
+    output: out_yashik3
+  - platform: monochromatic
+    id: light_yashik4
+    name: "Подсветка ящика 4"
+    output: out_yashik4
+  - platform: monochromatic
+    id: light_yashik5
+    name: "Подсветка ящика 5"
+    output: out_yashik5
+  - platform: monochromatic
+    id: light_stoleshnitsa
+    name: "Подсветка столешницы"
+    output: out_stoleshnitsa
+
+# ---------- Входы (герконы, тач, движение, присутствие) ----------
+binary_sensor:
+  # Герконы на ящиках — через SX1509, с подтяжкой, без инверсии:
+  # ящик открыт -> геркон разомкнут -> на пине HIGH -> сенсор "открыт"
+  - platform: gpio
+    name: "Ящик 1"
+    device_class: opening
+    pin:
+      sx1509: expander
+      number: 0
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      - light.turn_on:
+          id: light_yashik1
+          brightness: !lambda 'return id(current_brightness);'
+    on_release:
+      - light.turn_off: light_yashik1
+
+  - platform: gpio
+    name: "Ящик 2"
+    device_class: opening
+    pin:
+      sx1509: expander
+      number: 1
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      - light.turn_on:
+          id: light_yashik2
+          brightness: !lambda 'return id(current_brightness);'
+    on_release:
+      - light.turn_off: light_yashik2
+
+  - platform: gpio
+    name: "Ящик 3"
+    device_class: opening
+    pin:
+      sx1509: expander
+      number: 2
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      - light.turn_on:
+          id: light_yashik3
+          brightness: !lambda 'return id(current_brightness);'
+    on_release:
+      - light.turn_off: light_yashik3
+
+  - platform: gpio
+    name: "Ящик 4"
+    device_class: opening
+    pin:
+      sx1509: expander
+      number: 3
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      - light.turn_on:
+          id: light_yashik4
+          brightness: !lambda 'return id(current_brightness);'
+    on_release:
+      - light.turn_off: light_yashik4
+
+  - platform: gpio
+    name: "Ящик 5"
+    device_class: opening
+    pin:
+      sx1509: expander
+      number: 4
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      - light.turn_on:
+          id: light_yashik5
+          brightness: !lambda 'return id(current_brightness);'
+    on_release:
+      - light.turn_off: light_yashik5
+
+  # Датчик прикосновения столешницы — переключает свет столешницы
+  - platform: gpio
+    name: "Прикосновение столешница"
+    pin:
+      sx1509: expander
+      number: 5
+      mode:
+        input: true
+        pullup: true
+    on_click:
+      min_length: 20ms
+      max_length: 2s
+      then:
+        - if:
+            condition:
+              light.is_on: light_stoleshnitsa
+            then:
+              - light.turn_off: light_stoleshnitsa
+            else:
+              - light.turn_on:
+                  id: light_stoleshnitsa
+                  brightness: !lambda 'return id(current_brightness);'
+
+  # HC-SR501 — датчик движения (напрямую в ESP8266)
+  - platform: gpio
+    name: "Движение на кухне"
+    device_class: motion
+    pin:
+      number: D5
+      mode: INPUT
+
+  # RCWL-0516 — датчик присутствия (напрямую в ESP8266)
+  - platform: gpio
+    name: "Присутствие на кухне"
+    device_class: occupancy
+    pin:
+      number: D6
+      mode: INPUT
+
+# ---------- Сенсоры среды и диагностика ----------
+sensor:
+  - platform: bme280
+    address: 0x76
+    update_interval: 60s
+    temperature:
+      name: "Температура кухня"
+    humidity:
+      name: "Влажность кухня"
+    pressure:
+      name: "Давление кухня"
+
+  - platform: veml7700
+    address: 0x10
+    update_interval: 30s
+    ambient_light:
+      name: "Освещённость кухня"
+
+  - platform: wifi_signal
+    name: "Уровень WiFi kuhnya"
+    update_interval: 60s
+
+  - platform: uptime
+    name: "Аптайм kuhnya"
+
+# ---------- Текстовая диагностика: IP, версия, WiFi ----------
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP адрес kuhnya"
+    ssid:
+      name: "WiFi сеть kuhnya"
+
+  - platform: template
+    name: "Версия прошивки kuhnya"
+    lambda: |-
+      return {"${project_version}"};
+    update_interval: 60s
+
+# ---------- Кнопка перезагрузки (программная, видна в HA) ----------
+button:
+  - platform: restart
+    name: "Перезагрузка kuhnya"

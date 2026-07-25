@@ -123,7 +123,7 @@ binary_sensor:
   # Герконы на ящиках — через SX1509, с подтяжкой, без инверсии:
   # ящик открыт -> геркон разомкнут -> на пине HIGH -> сенсор "открыт"
   - platform: gpio
-    name: "Крупы и специи"
+    name: "Ящик 1"
     device_class: opening
     pin:
       sx1509: expander
@@ -139,7 +139,7 @@ binary_sensor:
       - light.turn_off: light_yashik1
 
   - platform: gpio
-    name: "Бакалы"
+    name: "Ящик 2"
     device_class: opening
     pin:
       sx1509: expander
@@ -155,7 +155,7 @@ binary_sensor:
       - light.turn_off: light_yashik2
 
   - platform: gpio
-    name: "Хлебница"
+    name: "Ящик 3"
     device_class: opening
     pin:
       sx1509: expander
@@ -171,7 +171,7 @@ binary_sensor:
       - light.turn_off: light_yashik3
 
   - platform: gpio
-    name: "Посуда1"
+    name: "Ящик 4"
     device_class: opening
     pin:
       sx1509: expander
@@ -187,7 +187,7 @@ binary_sensor:
       - light.turn_off: light_yashik4
 
   - platform: gpio
-    name: "Посуда2"
+    name: "Ящик 5"
     device_class: opening
     pin:
       sx1509: expander
@@ -204,7 +204,7 @@ binary_sensor:
 
   # Датчик прикосновения столешницы — переключает свет столешницы
   - platform: gpio
-    name: "вкл/выкл столешница"
+    name: "Прикосновение столешница"
     pin:
       sx1509: expander
       number: 5

@@ -22,6 +22,7 @@ i2c:
 # 5    = датчик прикосновения столешницы (вход)
 # 6-10 = MOSFET (HW-517) подсветки ящиков 1-5 (ШИМ-выходы)
 # 11   = MOSFET подсветки столешницы (ШИМ-выход)
+# управления производится по минусу, + берется общий 
 sx1509:
   - id: expander
     address: 0x3E
@@ -230,7 +231,7 @@ binary_sensor:
     name: "Движение на кухне"
     device_class: motion
     pin:
-      number: D5
+      number: D5 #
       mode: INPUT
 
   # RCWL-0516 — датчик присутствия (напрямую в ESP8266)
@@ -238,7 +239,7 @@ binary_sensor:
     name: "Присутствие на кухне"
     device_class: occupancy
     pin:
-      number: D6
+      number: D6 # подключения к OUT	
       mode: INPUT
 
 # ---------- Сенсоры среды и диагностика ----------

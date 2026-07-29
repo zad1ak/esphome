@@ -1,206 +1,256 @@
+# =============================================
+# ESPHome прошивка для вентилятора Lummy LU-FN105
+# Управление через Wemos D1 Mini
+# Автор: zad1ak
+# Репозиторий: https://github.com/zad1ak/esphome
+# =============================================
+
+# -------------------- ОСНОВНЫЕ НАСТРОЙКИ УСТРОЙСТВА --------------------
 esphome:
-  name: lummy-fan
-  friendly_name: Lummy Fan
-  comment: "LU-FN105 Smart Fan"
+  name: lummy-fan                      # Уникальное имя устройства в сети
+  friendly_name: Lummy Fan             # Отображаемое имя в Home Assistant
+  comment: "LU-FN105 Smart Fan"        # Комментарий для идентификации
+  # Подключаем внешний заголовочный файл с классом управления вентилятором
   includes:
-    - fan_controller.h
+    - fan_controller.h                 # Файл должен лежать в той же папке
+  # Действия при загрузке устройства
   on_boot:
-    - priority: -100
+    - priority: -100                   # Низкий приоритет, чтобы выполнить после инициализации
       then:
         - lambda: |-
+            # Запоминаем время запуска для подсчета времени работы
             id(fan_start_time) = millis();
 
+# -------------------- АППАРАТНАЯ ПЛАТФОРМА --------------------
+# Используем плату Wemos D1 Mini на базе ESP8266
 esp8266:
-  board: d1_mini
+  board: d1_mini                      # Тип платы
 
-# Enable logging
+# -------------------- СЛУЖЕБНЫЕ КОМПОНЕНТЫ --------------------
+# Включение логирования для отладки
 logger:
 
-# Enable Home Assistant API
+# Настройка API для связи с Home Assistant
 api:
   encryption:
-    key: !secret API
+    key: !secret API                   # Ключ шифрования из секретов
 
+# Настройка OTA для беспроводного обновления прошивки
 ota:
-  password: !secret OTA
+  password: !secret OTA               # Пароль для OTA из секретов
 
+# -------------------- НАСТРОЙКИ Wi-Fi --------------------
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+  ssid: !secret wifi_ssid             # Имя сети из секретов
+  password: !secret wifi_password     # Пароль сети из секретов
+  # Режим точки доступа на случай, если Wi-Fi не подключится
   ap:
-    ssid: !secret AP
-    password: "12345678"
+    ssid: !secret AP                  # Имя точки доступа из секретов
+    password: "12345678"              # Пароль точки доступа
 
+# Включаем портал для настройки Wi-Fi через веб-интерфейс
 captive_portal:
 
-# Время работы - переменная
+# -------------------- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ --------------------
 globals:
+  # Время запуска устройства (в миллисекундах)
   - id: fan_start_time
     type: unsigned long
-    restore_value: false
-    initial_value: '0'
+    restore_value: false               # Не сохраняем после перезагрузки
+    initial_value: '0'                 # Начальное значение
+
+  # Общее время работы вентилятора (в секундах)
   - id: fan_runtime_seconds
     type: int
-    restore_value: true
-    initial_value: '0'
+    restore_value: true               # Сохраняем значение при перезагрузке
+    initial_value: '0'                # Начальное значение
 
-# Сенсоры
+# -------------------- ДАТЧИКИ (СЕНСОРЫ) --------------------
 sensor:
-  # Сенсор времени работы
+  # Основной сенсор времени работы (в секундах)
   - platform: template
-    name: "Fan Runtime"
-    id: fan_runtime
-    icon: "mdi:clock-outline"
+    name: "Fan Runtime"               # Имя в Home Assistant
+    id: fan_runtime                   # ID для ссылок в коде
+    icon: "mdi:clock-outline"         # Иконка
+    # Lambda-функция для вычисления времени
     lambda: |-
-      unsigned long current = millis();
-      unsigned long elapsed = (current - id(fan_start_time)) / 1000;
-      id(fan_runtime_seconds) = elapsed;
-      return elapsed;
-    unit_of_measurement: "s"
-    accuracy_decimals: 0
-    update_interval: 5s
+      unsigned long current = millis();                     # Текущее время
+      unsigned long elapsed = (current - id(fan_start_time)) / 1000; # Секунд с запуска
+      id(fan_runtime_seconds) = elapsed;                    # Сохраняем в глобальную переменную
+      return elapsed;                                       # Возвращаем значение
+    unit_of_measurement: "s"           # Единица измерения - секунды
+    accuracy_decimals: 0               # Без десятичных знаков
+    update_interval: 5s               # Обновлять каждые 5 секунд
     filters:
-      - filter_out: nan
+      - filter_out: nan                # Отфильтровывать нечисловые значения
 
-  # Wi-Fi Signal
+  # Датчик уровня сигнала Wi-Fi
   - platform: wifi_signal
     name: "WiFi Signal"
-    update_interval: 60s
+    update_interval: 60s              # Обновлять каждую минуту
 
+# -------------------- ТЕКСТОВЫЕ СЕНСОРЫ --------------------
 text_sensor:
-  # IP адрес
+  # IP-адрес устройства
   - platform: wifi_info
     ip_address:
       name: "IP Address"
       icon: "mdi:ip-network"
-  # Версия прошивки
+
+  # Версия прошивки ESPHome
   - platform: version
     name: "Firmware Version"
     icon: "mdi:chip"
 
-# Кнопка перезагрузки
+# -------------------- КНОПКИ --------------------
 button:
+  # Кнопка перезагрузки устройства
   - platform: restart
     name: "Restart Fan"
     icon: "mdi:restart"
 
-# Пользовательский компонент для управления вентилятором
+# -------------------- ПОЛЬЗОВАТЕЛЬСКИЙ КОМПОНЕНТ УПРАВЛЕНИЯ --------------------
+# Основной компонент, реализующий логику работы вентилятора
 custom_component:
   - id: fan_controller
     lambda: |-
+      // ============================================================
+      // КЛАСС УПРАВЛЕНИЯ ВЕНТИЛЯТОРОМ
+      // ============================================================
       class FanController : public Component {
         public:
+          // ---------- НАСТРОЙКА ПИНОВ ПРИ ЗАГРУЗКЕ ----------
           void setup() override {
-            pinMode(D1, OUTPUT); // Mode LED
-            pinMode(D2, OUTPUT); // Timer LED
-            pinMode(D3, OUTPUT); // Speed LED
-            pinMode(D4, OUTPUT); // Fan motor control - IN1
-            pinMode(D5, OUTPUT); // Fan motor control - IN2
-            pinMode(D6, OUTPUT); // Fan motor control - PWM (EN)
-            
-            // Настройка кнопок как входов с подтяжкой
-            pinMode(D7, INPUT_PULLUP); // Mode button
-            pinMode(D8, INPUT_PULLUP); // Timer button
-            pinMode(D0, INPUT_PULLUP); // On/Speed button
-            // Off button на аналоговом пине A0
-            pinMode(A0, INPUT_PULLUP);
-            
-            // Инициализация
+            // Настройка пинов для светодиодов (LED)
+            pinMode(D1, OUTPUT); // Mode LED - индикация режима
+            pinMode(D2, OUTPUT); // Timer LED - индикация таймера
+            pinMode(D3, OUTPUT); // Speed LED - индикация скорости
+
+            // Настройка пинов управления двигателем
+            pinMode(D4, OUTPUT); // IN1 - управление направлением
+            pinMode(D5, OUTPUT); // IN2 - управление направлением
+            pinMode(D6, OUTPUT); // PWM (EN) - управление скоростью
+
+            // Настройка пинов кнопок как входов с подтяжкой к питанию
+            pinMode(D7, INPUT_PULLUP); // Mode button - переключение режимов
+            pinMode(D8, INPUT_PULLUP); // Timer button - настройка таймера
+            pinMode(D0, INPUT_PULLUP); // On/Speed button - включение/скорость
+            pinMode(A0, INPUT_PULLUP); // Off button - выключение
+
+            // Инициализация двигателя (выключен)
             digitalWrite(D4, LOW);
             digitalWrite(D5, LOW);
-            digitalWrite(D6, LOW);
-            current_speed = SPEED_OFF;
-            current_mode = MODE_NORMAL;
-            timer_minutes = 0;
-            last_button_time = 0;
-            
-            // Настройка таймера для прерываний
-            timer1_attachInterrupt(timerCallback);
-            timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP);
-            timer1_write(500000); // 0.5 секунды
+            digitalWrite(D6, LOW);      // PWM = 0 (выключен)
+
+            // Инициализация переменных состояния
+            current_speed = SPEED_OFF;   // Начинаем с выключенного состояния
+            current_mode = MODE_NORMAL;  // Режим по умолчанию - обычный
+            timer_minutes = 0;           // Таймер выключен
+            last_button_time = 0;        // Время последнего нажатия кнопки
+
+            // Настройка аппаратного таймера для прерываний
+            timer1_attachInterrupt(timerCallback);  // Привязываем функцию
+            timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP); // Режим таймера
+            timer1_write(500000);                   // Интервал 0.5 секунды
           }
 
+          // ---------- ОСНОВНОЙ ЦИКЛ РАБОТЫ ----------
           void loop() override {
-            // Обработка кнопок с антидребезгом
+            // Обработка кнопок с антидребезгом (задержка 200 мс)
             if (millis() - last_button_time > 200) {
-              if (digitalRead(D7) == LOW) handleModeButton();
-              if (digitalRead(D8) == LOW) handleTimerButton();
-              if (digitalRead(D0) == LOW) handleSpeedButton();
-              if (digitalRead(A0) == LOW) handleOffButton();
+              // Проверяем состояния кнопок (LOW = нажата)
+              if (digitalRead(D7) == LOW) handleModeButton();    // Режим
+              if (digitalRead(D8) == LOW) handleTimerButton();   // Таймер
+              if (digitalRead(D0) == LOW) handleSpeedButton();   // Вкл/Скорость
+              if (digitalRead(A0) == LOW) handleOffButton();     // Выкл
             }
-            
+
             // Обновление состояния вентилятора
             updateFan();
           }
 
         private:
+          // ---------- ПЕРЕЧИСЛЕНИЯ (ENUM) ----------
+          // Скорости вентилятора
           enum Speed { SPEED_OFF, SPEED_LOW, SPEED_MEDIUM, SPEED_HIGH };
+          // Режимы работы
           enum Mode { MODE_NORMAL, MODE_BREEZE, MODE_OFF };
-          
-          Speed current_speed = SPEED_OFF;
-          Mode current_mode = MODE_NORMAL;
-          int timer_minutes = 0;
-          unsigned long last_button_time = 0;
-          unsigned long last_breeze_change = 0;
-          bool breeze_slow = false;
-          int breeze_counter = 0;
-          unsigned long timer_end = 0;
-          bool timer_active = false;
-          
+
+          // ---------- ПЕРЕМЕННЫЕ СОСТОЯНИЯ ----------
+          Speed current_speed = SPEED_OFF;          // Текущая скорость
+          Mode current_mode = MODE_NORMAL;          // Текущий режим
+          int timer_minutes = 0;                    // Время таймера в минутах
+          unsigned long last_button_time = 0;       // Для антидребезга
+          unsigned long last_breeze_change = 0;     // Время последнего изменения в режиме BREEZE
+          bool breeze_slow = false;                 // Флаг "медленного" ветра
+          int breeze_counter = 0;                   // Счетчик циклов BREEZE
+          unsigned long timer_end = 0;              // Время окончания таймера
+          bool timer_active = false;                // Активен ли таймер
+
+          // ---------- ОБРАБОТЧИК ПРЕРЫВАНИЙ ТАЙМЕРА ----------
           static void timerCallback() {
-            // Функция для таймера
+            // Здесь можно добавить логику для периодических задач
+            // Например, проверку окончания таймера
             if (id(fan_controller)->timer_active) {
-              // Проверка окончания таймера
+              // Проверка происходит в основном цикле updateFan()
+              // Эта функция может использоваться для других целей
             }
           }
-          
+
+          // ---------- ОБРАБОТЧИКИ КНОПОК ----------
+          // Кнопка MODE: переключение режимов NORMAL -> BREEZE -> OFF
           void handleModeButton() {
             last_button_time = millis();
-            if (current_speed == SPEED_OFF) return;
-            
+            if (current_speed == SPEED_OFF) return; // Не работаем, если выключен
+
             switch (current_mode) {
               case MODE_NORMAL:
-                current_mode = MODE_BREEZE;
-                breeze_counter = 0;
+                current_mode = MODE_BREEZE;  // Переключаем на режим ветра
+                breeze_counter = 0;           // Сбрасываем счетчик
                 break;
               case MODE_BREEZE:
-                current_mode = MODE_OFF;
-                current_speed = SPEED_OFF;
-                stopFan();
+                current_mode = MODE_OFF;      // Переключаем в режим OFF
+                current_speed = SPEED_OFF;    // Выключаем скорость
+                stopFan();                    // Останавливаем мотор
                 break;
               case MODE_OFF:
-                current_mode = MODE_NORMAL;
-                current_speed = SPEED_LOW;
+                current_mode = MODE_NORMAL;   // Возвращаем в обычный режим
+                current_speed = SPEED_LOW;    // Устанавливаем минимальную скорость
                 break;
             }
           }
-          
+
+          // Кнопка TIMER: циклическое изменение времени 0.5 -> 7.5 часов
           void handleTimerButton() {
             last_button_time = millis();
-            if (current_speed == SPEED_OFF) return;
-            
-            // Цикл таймера: 0.5, 1, 1.5, 2, ... 7.5
+            if (current_speed == SPEED_OFF) return; // Таймер только при включенном
+
+            // Цикл таймера: 0.5, 1, 1.5, ... 7.5 часов
             if (timer_minutes == 0) {
-              timer_minutes = 30; // 0.5 часа = 30 минут
-            } else if (timer_minutes < 450) {
-              timer_minutes += 30; // +0.5 часа
+              timer_minutes = 30;          // 0.5 часа = 30 минут
+            } else if (timer_minutes < 450) { // 450 минут = 7.5 часов
+              timer_minutes += 30;          // Увеличиваем на 0.5 часа
             } else {
-              timer_minutes = 0;
-              timer_active = false;
+              timer_minutes = 0;            // Сбрасываем таймер
+              timer_active = false;         // Деактивируем
             }
-            
+
+            // Если время установлено - активируем таймер
             if (timer_minutes > 0) {
               timer_active = true;
-              timer_end = millis() + (timer_minutes * 60000);
+              timer_end = millis() + (timer_minutes * 60000); // Переводим в мс
             }
           }
-          
+
+          // Кнопка ON/SPEED: включение и циклическое изменение скорости
           void handleSpeedButton() {
             last_button_time = millis();
             if (current_speed == SPEED_OFF) {
+              // Если выключен - включаем на минимальной скорости
               current_speed = SPEED_LOW;
-              current_mode = MODE_NORMAL;
+              current_mode = MODE_NORMAL;   // Устанавливаем обычный режим
             } else {
+              // Иначе переключаем скорость по кругу: LOW -> MEDIUM -> HIGH -> LOW
               switch (current_speed) {
                 case SPEED_LOW:
                   current_speed = SPEED_MEDIUM;
@@ -216,102 +266,128 @@ custom_component:
               }
             }
           }
-          
+
+          // Кнопка OFF: полное выключение вентилятора
           void handleOffButton() {
             last_button_time = millis();
-            current_speed = SPEED_OFF;
-            current_mode = MODE_OFF;
-            stopFan();
-            timer_active = false;
-            timer_minutes = 0;
+            current_speed = SPEED_OFF;      // Выключаем скорость
+            current_mode = MODE_OFF;        // Устанавливаем режим OFF
+            stopFan();                      // Останавливаем мотор
+            timer_active = false;           // Деактивируем таймер
+            timer_minutes = 0;              // Сбрасываем время таймера
           }
-          
+
+          // ---------- ФУНКЦИИ УПРАВЛЕНИЯ МОТОРОМ ----------
+          // Остановка мотора
           void stopFan() {
-            analogWrite(D6, 0);
-            digitalWrite(D4, LOW);
-            digitalWrite(D5, LOW);
+            analogWrite(D6, 0);            // PWM = 0
+            digitalWrite(D4, LOW);         // IN1 = LOW
+            digitalWrite(D5, LOW);         // IN2 = LOW
           }
-          
+
+          // Основная функция обновления состояния вентилятора
           void updateFan() {
-            // Проверка таймера
+            // Проверка окончания таймера
             if (timer_active && millis() > timer_end) {
-              timer_active = false;
-              timer_minutes = 0;
-              current_speed = SPEED_OFF;
-              stopFan();
-              return;
+              timer_active = false;         // Деактивируем таймер
+              timer_minutes = 0;            // Сбрасываем время
+              current_speed = SPEED_OFF;    // Выключаем скорость
+              stopFan();                    // Останавливаем мотор
+              return;                       // Выходим из функции
             }
-            
+
+            // Если вентилятор выключен - останавливаем мотор и выходим
             if (current_speed == SPEED_OFF) {
               stopFan();
               return;
             }
-            
-            // Управление скоростью
-            int speed_value = 0;
+
+            // ---------- УПРАВЛЕНИЕ СКОРОСТЬЮ ----------
+            int speed_value = 0; // Значение PWM (0-1023)
             switch (current_speed) {
               case SPEED_LOW:
-                speed_value = 170; // ~33% PWM
+                speed_value = 170;   // ~33% от максимума
                 break;
               case SPEED_MEDIUM:
-                speed_value = 340; // ~67% PWM
+                speed_value = 340;   // ~67% от максимума
                 break;
               case SPEED_HIGH:
-                speed_value = 512; // 100% PWM
+                speed_value = 512;   // 100% (максимум)
                 break;
               default:
                 break;
             }
-            
-            // Режим BREEZE
+
+            // ---------- РЕЖИМ BREEZE (ИМИТАЦИЯ ВЕТРА) ----------
             if (current_mode == MODE_BREEZE) {
+              // Изменяем состояние каждые 2 секунды
               if (millis() - last_breeze_change > 2000) {
                 last_breeze_change = millis();
                 breeze_counter++;
+
+                // Каждый 6-й цикл (12 секунд) меняем режим скорости
                 if (breeze_counter % 6 == 0) {
-                  breeze_slow = !breeze_slow;
+                  breeze_slow = !breeze_slow; // Переключаем: быстро/медленно
                 }
+
+                // Если режим "медленный" - уменьшаем скорость на 60%
                 if (breeze_slow) {
-                  speed_value = speed_value * 0.4; // Медленнее
+                  speed_value = speed_value * 0.4; // Оставляем 40% от текущей
                 }
               }
             }
-            
-            // Включение мотора
-            analogWrite(D6, speed_value);
-            digitalWrite(D4, HIGH);
-            digitalWrite(D5, LOW);
-            
-            // Обновление LED индикаторов
-            digitalWrite(D1, current_mode != MODE_OFF ? HIGH : LOW);
-            digitalWrite(D2, timer_active ? HIGH : LOW);
-            digitalWrite(D3, current_speed != SPEED_OFF ? HIGH : LOW);
+
+            // ---------- ПРИМЕНЕНИЕ УСТАНОВОК К МОТОРУ ----------
+            analogWrite(D6, speed_value);    // Устанавливаем ШИМ
+            digitalWrite(D4, HIGH);          // Включаем направление 1
+            digitalWrite(D5, LOW);           // Выключаем направление 2
+
+            // ---------- ОБНОВЛЕНИЕ LED ИНДИКАТОРОВ ----------
+            digitalWrite(D1, current_mode != MODE_OFF ? HIGH : LOW); // Mode LED
+            digitalWrite(D2, timer_active ? HIGH : LOW);             // Timer LED
+            digitalWrite(D3, current_speed != SPEED_OFF ? HIGH : LOW); // Speed LED
           }
       };
-      
+
+      // Возвращаем экземпляр класса
       return {new FanController()};
 
-# Система сенсоров времени работы (отображение в днях, часах, минутах)
+# -------------------- ФОРМАТИРОВАННОЕ ВРЕМЯ РАБОТЫ --------------------
+# Шаблон для отображения времени в днях, часах, минутах и секундах
 template:
   - sensor:
-      name: "Fan Runtime Formatted"
-      id: fan_runtime_formatted
-      icon: "mdi:clock-outline"
+      name: "Fan Runtime Formatted"       # Имя сенсора
+      id: fan_runtime_formatted           # ID для ссылок
+      icon: "mdi:clock-outline"          # Иконка
+      # Lambda-функция для форматирования
       lambda: |-
+        // Получаем общее время работы в секундах
         int total_seconds = id(fan_runtime_seconds);
-        int days = total_seconds / 86400;
-        int hours = (total_seconds % 86400) / 3600;
-        int minutes = (total_seconds % 3600) / 60;
-        int seconds = total_seconds % 60;
+
+        // Вычисляем дни, часы, минуты и секунды
+        int days = total_seconds / 86400;                 // 86400 секунд в дне
+        int hours = (total_seconds % 86400) / 3600;       // 3600 секунд в часе
+        int minutes = (total_seconds % 3600) / 60;        // 60 секунд в минуте
+        int seconds = total_seconds % 60;                 // Остаток - секунды
+
+        // Буфер для строки
         char buffer[32];
+
+        // Форматируем в зависимости от величины
         if (days > 0) {
+          // Если есть дни - показываем дни, часы, минуты
           snprintf(buffer, sizeof(buffer), "%dd %02dh %02dm", days, hours, minutes);
         } else if (hours > 0) {
+          // Если есть часы - показываем часы, минуты, секунды
           snprintf(buffer, sizeof(buffer), "%dh %02dm %02ds", hours, minutes, seconds);
         } else if (minutes > 0) {
+          // Если есть минуты - показываем минуты и секунды
           snprintf(buffer, sizeof(buffer), "%dm %02ds", minutes, seconds);
         } else {
+          // Иначе только секунды
           snprintf(buffer, sizeof(buffer), "%ds", seconds);
         }
+
+        // Возвращаем строку с отформатированным временем
         return std::string(buffer);
-      update_interval: 5s
+      update_interval: 5s                # Обновление каждые 5 секунд

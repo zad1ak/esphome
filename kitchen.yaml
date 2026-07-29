@@ -1,4 +1,40 @@
 # =========================================================
+# код для загрузки в esphome
+#
+# =========================================================
+#substitutions:
+#  name: kuhnya
+#
+#packages:
+#  kitchen_hw: github://zad1ak/esphome/kitchen.yaml
+#
+#esphome:
+#  name: ${name}
+#  name_add_mac_suffix: false
+#
+#esp8266:
+#  board: nodemcuv2
+#
+#wifi:
+#  ssid: !secret wifi_ssid
+#  password: !secret wifi_password
+#  ap:
+#    password: !secret AP
+#
+#captive_portal:
+#
+#api:
+#  encryption:
+#    key: !secret API
+#
+#ota:
+#  platform: esphome
+#  password: !secret OTA
+#
+#logger:
+# =========================================================
+
+# =========================================================
 #  kitchen.yaml — "начинка" устройства kuhnya
 #  Этот файл лежит на GitHub (публично, БЕЗ паролей/ключей)
 #  и подключается через packages: в локальном файле ESPHome.

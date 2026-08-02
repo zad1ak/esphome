@@ -1,16 +1,11 @@
 # =========================================================
-# lummy-fan.yaml — логика управления вентилятором Lummy LU-FN105
-# Этот файл лежит на GitHub (публично, БЕЗ паролей/ключей)
-# и подключается через packages: в локальном файле ESPHome.
-#
-# URL: https://github.com/zad1ak/esphome/blob/main/lummy-fan.yaml
-#
-# Версия прошивки — меняйте при каждом обновлении логики,
-# чтобы видеть в HA, какая версия сейчас залита.
+# Lummy LU-FN105 — полная конфигурация для Wemos D1 Mini
+# Версия: 1.0.2
 # =========================================================
 
 substitutions:
-  project_version: "1.0.1"
+  name: lummy-fan
+  project_version: "1.0.2"
   
   # ---------- Пины Wemos D1 Mini ----------
   # Подключите эти пины к тактовым кнопкам вентилятора.
@@ -20,6 +15,31 @@ substitutions:
   pin_timer: D2   # GPIO4 — кнопка TIMER
   pin_speed: D5   # GPIO14 — кнопка ON/SPEED
   pin_off: D6     # GPIO12 — кнопка OFF
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    password: !secret AP
+
+captive_portal:
+
+api:
+  encryption:
+    key: !secret API
+
+ota:
+  platform: esphome
+  password: !secret OTA
+
+logger:
 
 # ---------- Глобальные переменные состояния ----------
 # Используются для отслеживания "предполагаемого" состояния,

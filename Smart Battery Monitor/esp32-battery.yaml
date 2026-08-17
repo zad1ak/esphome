@@ -1,0 +1,29 @@
+# Основной файл прошивки
+esphome:
+  name: "my-battery-station"
+  friendly_name: "Battery Station"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# --- Импорт внешней конфигурации с GitHub ---
+packages:
+  battery_monitor:
+    url: https://github.com/ВАШ_НИК/esphome-battery-monitor
+    file: battery_monitor.yaml
+    ref: main  # ветка
+
+# --- Локальные настройки (Wi-Fi, API и т.д.) ---
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password

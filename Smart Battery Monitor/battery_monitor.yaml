@@ -1,0 +1,555 @@
+# ============================================================
+# SMART BATTERY MONITOR — ESPHome
+# Поддержка от 1 до 10 батарей Li-ion 18650
+# ============================================================
+
+# --- Настройки устройства ---
+esphome:
+  name: "smart-battery-monitor"        # Имя устройства в сети
+  friendly_name: "Smart Battery Monitor" # Отображаемое имя
+  comment: "Мониторинг 1-10 батарей через ADS1115"
+
+# --- Платформа ESP32 ---
+esp32:
+  board: esp32dev                      # Модель платы: ESP32 DevKit V1
+  framework:
+    type: arduino                      # Используем Arduino-фреймворк
+
+# --- Логирование ---
+logger:
+  level: INFO                          # Уровень логов: INFO (можно DEBUG для отладки)
+
+# --- API для подключения к Home Assistant ---
+api:
+  encryption:
+    key: !secret api_encryption_key    # Ключ шифрования (хранится в secrets.yaml)
+
+# --- OTA обновления ---
+ota:
+  - platform: esphome
+    password: !secret ota_password     # Пароль для обновления по воздуху
+
+# --- Wi-Fi ---
+wifi:
+  ssid: !secret wifi_ssid              # SSID сети
+  password: !secret wifi_password      # Пароль Wi-Fi
+  ap:                                  # Режим точки доступа при отсутствии Wi-Fi
+    ssid: "BatteryMonitor Fallback"
+    password: !secret fallback_password
+
+# --- Веб-сервер (локальный дашборд) ---
+web_server:
+  port: 80                             # Порт веб-интерфейса
+  version: 2                           # Версия 2 (современный UI)
+
+# --- I2C шина для связи с ADS1115 ---
+i2c:
+  sda: GPIO21                          # Пин данных I2C
+  scl: GPIO22                          # Пин тактирования I2C
+  scan: true                           # Автоматически сканировать устройства на шине
+  frequency: 400kHz                    # Частота шины: 400 кГц (быстрый режим)
+
+# --- 3 модуля ADS1115 с разными I2C-адресами ---
+ads1115:
+  - address: 0x48                      # Адрес первого модуля (ADDR → GND)
+    id: ads1115_1                      # ID для ссылок в сенсорах
+  - address: 0x49                      # Адрес второго модуля (ADDR → VCC)
+    id: ads1115_2
+  - address: 0x4A                      # Адрес третьего модуля (ADDR → SDA)
+    id: ads1115_3
+
+# ============================================================
+# СЕНСОРЫ НАПРЯЖЕНИЯ (10 батарей)
+# ============================================================
+sensor:
+  # --- БАТАРЕЯ 1 ---
+  - platform: ads1115                  # Используем внешний ADC ADS1115
+    ads1115_id: ads1115_1              # Привязка к модулю #1
+    multiplexer: A0_GND                # Канал A0 относительно GND
+    gain: 2.048                        # Диапазон измерения: ±2.048V
+    name: "Battery 1 Voltage"          # Имя сенсора в Home Assistant
+    id: bat1_voltage                   # Внутренний ID для ссылок
+    unit_of_measurement: "V"           # Единица измерения: Вольты
+    accuracy_decimals: 3               # Точность: 3 знака после запятой
+    update_interval: 10s               # Интервал обновления: 10 секунд
+    filters:
+      - multiply: 2.0                 # Коэффициент делителя (10k+10k = 1:2)
+      - throttle: 5s                   # Ограничение частоты отправки данных
+
+  # --- БАТАРЕЯ 2 ---
+  - platform: ads1115
+    ads1115_id: ads1115_1
+    multiplexer: A1_GND                # Канал A1
+    gain: 2.048
+    name: "Battery 2 Voltage"
+    id: bat2_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # --- БАТАРЕЯ 3 ---
+  - platform: ads1115
+    ads1115_id: ads1115_1
+    multiplexer: A2_GND                # Канал A2
+    gain: 2.048
+    name: "Battery 3 Voltage"
+    id: bat3_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # --- БАТАРЕЯ 4 ---
+  - platform: ads1115
+    ads1115_id: ads1115_1
+    multiplexer: A3_GND                # Канал A3
+    gain: 2.048
+    name: "Battery 4 Voltage"
+    id: bat4_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # --- БАТАРЕЯ 5 ---
+  - platform: ads1115
+    ads1115_id: ads1115_2              # Модуль #2
+    multiplexer: A0_GND
+    gain: 2.048
+    name: "Battery 5 Voltage"
+    id: bat5_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # --- БАТАРЕЯ 6 ---
+  - platform: ads1115
+    ads1115_id: ads1115_2
+    multiplexer: A1_GND
+    gain: 2.048
+    name: "Battery 6 Voltage"
+    id: bat6_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # --- БАТАРЕЯ 7 ---
+  - platform: ads1115
+    ads1115_id: ads1115_2
+    multiplexer: A2_GND
+    gain: 2.048
+    name: "Battery 7 Voltage"
+    id: bat7_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # --- БАТАРЕЯ 8 ---
+  - platform: ads1115
+    ads1115_id: ads1115_2
+    multiplexer: A3_GND
+    gain: 2.048
+    name: "Battery 8 Voltage"
+    id: bat8_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # --- БАТАРЕЯ 9 ---
+  - platform: ads1115
+    ads1115_id: ads1115_3              # Модуль #3
+    multiplexer: A0_GND
+    gain: 2.048
+    name: "Battery 9 Voltage"
+    id: bat9_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # --- БАТАРЕЯ 10 ---
+  - platform: ads1115
+    ads1115_id: ads1115_3
+    multiplexer: A1_GND
+    gain: 2.048
+    name: "Battery 10 Voltage"
+    id: bat10_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    filters:
+      - multiply: 2.0
+      - throttle: 5s
+
+  # ============================================================
+  # ПРОЦЕНТ ЗАРЯДА (Template сенсоры)
+  # Формула для Li-ion: 4.2V = 100%, 3.0V = 0%
+  # ============================================================
+  - platform: template
+    name: "Battery 1 Percentage"
+    id: bat1_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat1_voltage).state;  // Получаем напряжение батареи 1
+      if (std::isnan(v)) return NAN;      // Если данных нет — возвращаем NaN
+      if (v >= 4.2) return 100.0;         // Полный заряд
+      if (v <= 3.0) return 0.0;           // Полный разряд (минимум)
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;  // Линейная интерполяция
+
+  - platform: template
+    name: "Battery 2 Percentage"
+    id: bat2_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat2_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  - platform: template
+    name: "Battery 3 Percentage"
+    id: bat3_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat3_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  - platform: template
+    name: "Battery 4 Percentage"
+    id: bat4_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat4_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  - platform: template
+    name: "Battery 5 Percentage"
+    id: bat5_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat5_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  - platform: template
+    name: "Battery 6 Percentage"
+    id: bat6_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat6_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  - platform: template
+    name: "Battery 7 Percentage"
+    id: bat7_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat7_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  - platform: template
+    name: "Battery 8 Percentage"
+    id: bat8_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat8_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  - platform: template
+    name: "Battery 9 Percentage"
+    id: bat9_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat9_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  - platform: template
+    name: "Battery 10 Percentage"
+    id: bat10_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      float v = id(bat10_voltage).state;
+      if (std::isnan(v)) return NAN;
+      if (v >= 4.2) return 100.0;
+      if (v <= 3.0) return 0.0;
+      return (v - 3.0) / (4.2 - 3.0) * 100.0;
+
+  # --- Среднее напряжение всех батарей ---
+  - platform: template
+    name: "Average Battery Voltage"
+    id: avg_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    lambda: |-
+      float sum = 0.0;
+      int count = 0;
+      // Проверяем каждую батарею. Если напряжение > 0 — учитываем
+      if (!std::isnan(id(bat1_voltage).state) && id(bat1_voltage).state > 0) { sum += id(bat1_voltage).state; count++; }
+      if (!std::isnan(id(bat2_voltage).state) && id(bat2_voltage).state > 0) { sum += id(bat2_voltage).state; count++; }
+      if (!std::isnan(id(bat3_voltage).state) && id(bat3_voltage).state > 0) { sum += id(bat3_voltage).state; count++; }
+      if (!std::isnan(id(bat4_voltage).state) && id(bat4_voltage).state > 0) { sum += id(bat4_voltage).state; count++; }
+      if (!std::isnan(id(bat5_voltage).state) && id(bat5_voltage).state > 0) { sum += id(bat5_voltage).state; count++; }
+      if (!std::isnan(id(bat6_voltage).state) && id(bat6_voltage).state > 0) { sum += id(bat6_voltage).state; count++; }
+      if (!std::isnan(id(bat7_voltage).state) && id(bat7_voltage).state > 0) { sum += id(bat7_voltage).state; count++; }
+      if (!std::isnan(id(bat8_voltage).state) && id(bat8_voltage).state > 0) { sum += id(bat8_voltage).state; count++; }
+      if (!std::isnan(id(bat9_voltage).state) && id(bat9_voltage).state > 0) { sum += id(bat9_voltage).state; count++; }
+      if (!std::isnan(id(bat10_voltage).state) && id(bat10_voltage).state > 0) { sum += id(bat10_voltage).state; count++; }
+      if (count == 0) return NAN;
+      return sum / count;
+
+  # --- Минимальное напряжение (для определения слабейшей батареи) ---
+  - platform: template
+    name: "Minimum Battery Voltage"
+    id: min_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    lambda: |-
+      float min_v = 999.0;
+      if (!std::isnan(id(bat1_voltage).state) && id(bat1_voltage).state > 0 && id(bat1_voltage).state < min_v) min_v = id(bat1_voltage).state;
+      if (!std::isnan(id(bat2_voltage).state) && id(bat2_voltage).state > 0 && id(bat2_voltage).state < min_v) min_v = id(bat2_voltage).state;
+      if (!std::isnan(id(bat3_voltage).state) && id(bat3_voltage).state > 0 && id(bat3_voltage).state < min_v) min_v = id(bat3_voltage).state;
+      if (!std::isnan(id(bat4_voltage).state) && id(bat4_voltage).state > 0 && id(bat4_voltage).state < min_v) min_v = id(bat4_voltage).state;
+      if (!std::isnan(id(bat5_voltage).state) && id(bat5_voltage).state > 0 && id(bat5_voltage).state < min_v) min_v = id(bat5_voltage).state;
+      if (!std::isnan(id(bat6_voltage).state) && id(bat6_voltage).state > 0 && id(bat6_voltage).state < min_v) min_v = id(bat6_voltage).state;
+      if (!std::isnan(id(bat7_voltage).state) && id(bat7_voltage).state > 0 && id(bat7_voltage).state < min_v) min_v = id(bat7_voltage).state;
+      if (!std::isnan(id(bat8_voltage).state) && id(bat8_voltage).state > 0 && id(bat8_voltage).state < min_v) min_v = id(bat8_voltage).state;
+      if (!std::isnan(id(bat9_voltage).state) && id(bat9_voltage).state > 0 && id(bat9_voltage).state < min_v) min_v = id(bat9_voltage).state;
+      if (!std::isnan(id(bat10_voltage).state) && id(bat10_voltage).state > 0 && id(bat10_voltage).state < min_v) min_v = id(bat10_voltage).state;
+      if (min_v == 999.0) return NAN;
+      return min_v;
+
+  # --- Максимальное напряжение ---
+  - platform: template
+    name: "Maximum Battery Voltage"
+    id: max_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    lambda: |-
+      float max_v = 0.0;
+      if (!std::isnan(id(bat1_voltage).state) && id(bat1_voltage).state > max_v) max_v = id(bat1_voltage).state;
+      if (!std::isnan(id(bat2_voltage).state) && id(bat2_voltage).state > max_v) max_v = id(bat2_voltage).state;
+      if (!std::isnan(id(bat3_voltage).state) && id(bat3_voltage).state > max_v) max_v = id(bat3_voltage).state;
+      if (!std::isnan(id(bat4_voltage).state) && id(bat4_voltage).state > max_v) max_v = id(bat4_voltage).state;
+      if (!std::isnan(id(bat5_voltage).state) && id(bat5_voltage).state > max_v) max_v = id(bat5_voltage).state;
+      if (!std::isnan(id(bat6_voltage).state) && id(bat6_voltage).state > max_v) max_v = id(bat6_voltage).state;
+      if (!std::isnan(id(bat7_voltage).state) && id(bat7_voltage).state > max_v) max_v = id(bat7_voltage).state;
+      if (!std::isnan(id(bat8_voltage).state) && id(bat8_voltage).state > max_v) max_v = id(bat8_voltage).state;
+      if (!std::isnan(id(bat9_voltage).state) && id(bat9_voltage).state > max_v) max_v = id(bat9_voltage).state;
+      if (!std::isnan(id(bat10_voltage).state) && id(bat10_voltage).state > max_v) max_v = id(bat10_voltage).state;
+      if (max_v == 0.0) return NAN;
+      return max_v;
+
+  # --- Дельта (разброс) между макс и мин ---
+  - platform: template
+    name: "Battery Voltage Delta"
+    id: voltage_delta
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    update_interval: 10s
+    lambda: |-
+      float max_v = id(max_voltage).state;
+      float min_v = id(min_voltage).state;
+      if (std::isnan(max_v) || std::isnan(min_v)) return NAN;
+      return max_v - min_v;
+
+  # --- WiFi сигнал ---
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    unit_of_measurement: "dBm"
+    accuracy_decimals: 0
+
+# ============================================================
+# БИНАРНЫЕ СЕНСОРЫ (Алерты)
+# ============================================================
+binary_sensor:
+  # --- Низкий заряд Батареи 1 ---
+  - platform: template
+    name: "Battery 1 Low Alert"
+    id: bat1_low
+    device_class: battery           # Класс устройства: батарея
+    lambda: |-
+      if (std::isnan(id(bat1_voltage).state)) return false;
+      return id(bat1_voltage).state < 3.2;  // Тревога если < 3.2V
+
+  - platform: template
+    name: "Battery 2 Low Alert"
+    id: bat2_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat2_voltage).state)) return false;
+      return id(bat2_voltage).state < 3.2;
+
+  - platform: template
+    name: "Battery 3 Low Alert"
+    id: bat3_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat3_voltage).state)) return false;
+      return id(bat3_voltage).state < 3.2;
+
+  - platform: template
+    name: "Battery 4 Low Alert"
+    id: bat4_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat4_voltage).state)) return false;
+      return id(bat4_voltage).state < 3.2;
+
+  - platform: template
+    name: "Battery 5 Low Alert"
+    id: bat5_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat5_voltage).state)) return false;
+      return id(bat5_voltage).state < 3.2;
+
+  - platform: template
+    name: "Battery 6 Low Alert"
+    id: bat6_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat6_voltage).state)) return false;
+      return id(bat6_voltage).state < 3.2;
+
+  - platform: template
+    name: "Battery 7 Low Alert"
+    id: bat7_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat7_voltage).state)) return false;
+      return id(bat7_voltage).state < 3.2;
+
+  - platform: template
+    name: "Battery 8 Low Alert"
+    id: bat8_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat8_voltage).state)) return false;
+      return id(bat8_voltage).state < 3.2;
+
+  - platform: template
+    name: "Battery 9 Low Alert"
+    id: bat9_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat9_voltage).state)) return false;
+      return id(bat9_voltage).state < 3.2;
+
+  - platform: template
+    name: "Battery 10 Low Alert"
+    id: bat10_low
+    device_class: battery
+    lambda: |-
+      if (std::isnan(id(bat10_voltage).state)) return false;
+      return id(bat10_voltage).state < 3.2;
+
+  # --- Общий алерт: любая батарея разряжена ---
+  - platform: template
+    name: "Any Battery Low Alert"
+    id: any_low
+    device_class: battery
+    lambda: |-
+      return id(bat1_low).state || id(bat2_low).state || id(bat3_low).state ||
+             id(bat4_low).state || id(bat5_low).state || id(bat6_low).state ||
+             id(bat7_low).state || id(bat8_low).state || id(bat9_low).state ||
+             id(bat10_low).state;
+
+# ============================================================
+# ТЕКСТОВЫЙ СЕНСОР (статус системы)
+# ============================================================
+text_sensor:
+  - platform: template
+    name: "System Status"
+    id: system_status
+    update_interval: 10s
+    lambda: |-
+      int low_count = 0;
+      if (id(bat1_low).state) low_count++;
+      if (id(bat2_low).state) low_count++;
+      if (id(bat3_low).state) low_count++;
+      if (id(bat4_low).state) low_count++;
+      if (id(bat5_low).state) low_count++;
+      if (id(bat6_low).state) low_count++;
+      if (id(bat7_low).state) low_count++;
+      if (id(bat8_low).state) low_count++;
+      if (id(bat9_low).state) low_count++;
+      if (id(bat10_low).state) low_count++;
+      
+      if (low_count == 0) return std::string("OK");
+      if (low_count == 1) return std::string("1 battery low");
+      return std::to_string(low_count) + " batteries low";
+
+# ============================================================
+# КНОПКИ (для ручного обновления или тестов)
+# ============================================================
+button:
+  - platform: restart
+    name: "Restart Device"
+    id: restart_btn
+    device_class: restart

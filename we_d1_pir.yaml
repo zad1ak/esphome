@@ -10,7 +10,7 @@
 esphome:
   project:
     name: "zad1ak.we-d1-pir"
-    version: "1.0.0"
+    version: "1.0.1"                  # <-- Обновил версию!
 
 # --- Captive Portal (веб-настройка WiFi при сбое) ---
 captive_portal:
@@ -28,11 +28,15 @@ web_server:
 #   VCC  -> 5V (или 3.3V)
 #   GND  -> GND
 #   OUT  -> D2 (GPIO4)
+#
+# ⚠️ На ESP8266 только GPIO16 поддерживает INPUT_PULLDOWN!
+# PIR HC-SR501 имеет встроенную подтяжку, поэтому используем INPUT (без подтяжки)
 binary_sensor:
   - platform: gpio
     pin: 
       number: GPIO4                   # D2 на Wemos D1 Mini
-      mode: INPUT_PULLDOWN            # Подтяжка к GND
+      mode: INPUT                     # <-- ИСПРАВЛЕНО: убран INPUT_PULLDOWN
+      inverted: false
     name: "PIR Motion"
     device_class: motion              # Иконка движения в HA
     filters:
@@ -87,24 +91,10 @@ text_sensor:
   - platform: template
     name: "Firmware Version"
     lambda: |-
-      return {"1.0.0"};
-    update_interval: never            # Меняется только при перезагрузке
+      return {"1.0.1"};               # <-- Обновил версию!
+    update_interval: never
     entity_category: diagnostic
 
 # ============================================================
 # ЗДЕСЬ МОЖНО ДОБАВЛЯТЬ НОВЫЕ ДАТЧИКИ
 # ============================================================
-# Примеры для будущего расширения:
-#
-# sensor:
-#   - platform: dht
-#     pin: GPIO5        # D1
-#     model: DHT22
-#     temperature:
-#       name: "Room Temperature"
-#     humidity:
-#       name: "Room Humidity"
-#
-#   - platform: adc
-#     pin: A0
-#     name: "Analog Value"

@@ -6,7 +6,7 @@
 esphome:
   project:
     name: "zad1ak.we-d1-pir"
-    version: "1.0.2"                  # <-- Обновил версию
+    version: "1.0.3"                  # <-- Обновил версию
 
 captive_portal:
 
@@ -44,12 +44,13 @@ button:
     entity_category: diagnostic
 
 sensor:
-  # --- Время работы с момента включения (в секундах) ---
-  # ⚠️ type: timestamp требует компонент time — убрано для простоты
+  # --- Время работы в секундах (используется для расчёта формата) ---
+  # id нужен, чтобы text_sensor мог прочитать значение
   - platform: uptime
-    name: "Uptime"
-    # type: timestamp        # <-- УБРАНО! Иначе нужен компонент time
-    update_interval: 60s
+    id: uptime_sensor
+    name: "Uptime Seconds"
+    update_interval: 10s
+    internal: true                    # Скрыт из HA, используется только внутри
     entity_category: diagnostic
 
   # --- Уровень WiFi сигнала (RSSI) ---
@@ -81,9 +82,33 @@ text_sensor:
   - platform: template
     name: "Firmware Version"
     lambda: |-
-      return {"1.0.2"};
+      return {"1.0.3"};
     update_interval: never
     entity_category: diagnostic
+
+  # --- Время работы в формате: Xд Yч Zм Wс ---
+  # Берёт секунды из uptime_sensor и форматирует в читаемый вид
+  - platform: template
+    name: "Uptime"
+    lambda: |-
+      // Получаем секунды из сенсора uptime
+      int total = (int) id(uptime_sensor).state;
+      
+      // Расчёт дней, часов, минут, секунд
+      int days = total / 86400;
+      total %= 86400;
+      int hours = total / 3600;
+      total %= 3600;
+      int minutes = total / 60;
+      int seconds = total % 60;
+      
+      // Формируем строку: "2д 5ч 30м 15с"
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%dd %dh %dm %ds", days, hours, minutes, seconds);
+      return {buf};
+    update_interval: 10s
+    entity_category: diagnostic
+    icon: "mdi:timer-outline"
 
 # ============================================================
 # ЗДЕСЬ МОЖНО ДОБАВЛЯТЬ НОВЫЕ ДАТЧИКИ

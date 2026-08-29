@@ -1,21 +1,15 @@
 # ============================================================
 # ESPHome: Общая конфигурация Wemos D1 Mini + PIR HC-SR501
 # Загружается с GitHub через packages
-# 
-# ⚠️ ВАЖНО: в этом файле НЕЛЬЗЯ использовать !secret!
-# Все секреты (WiFi, API, OTA) должны быть в локальном файле.
 # ============================================================
 
-# --- Версия прошивки (меняйте при каждом обновлении!) ---
 esphome:
   project:
     name: "zad1ak.we-d1-pir"
-    version: "1.0.1"                  # <-- Обновил версию!
+    version: "1.0.2"                  # <-- Обновил версию
 
-# --- Captive Portal (веб-настройка WiFi при сбое) ---
 captive_portal:
 
-# --- Веб-сервер (доступ по IP в браузере) ---
 web_server:
   port: 80
 
@@ -23,54 +17,50 @@ web_server:
 # КОМПОНЕНТЫ УСТРОЙСТВА
 # ============================================================
 
-# --- PIR датчик движения HC-SR501 ---
-# Подключение:
-#   VCC  -> 5V (или 3.3V)
-#   GND  -> GND
-#   OUT  -> D2 (GPIO4)
-#
-# ⚠️ На ESP8266 только GPIO16 поддерживает INPUT_PULLDOWN!
-# PIR HC-SR501 имеет встроенную подтяжку, поэтому используем INPUT (без подтяжки)
 binary_sensor:
+  # --- PIR датчик движения HC-SR501 ---
+  # Подключение: VCC->5V, GND->GND, OUT->D2(GPIO4)
+  # На ESP8266 только GPIO16 поддерживает INPUT_PULLDOWN!
+  # PIR имеет встроенную подтяжку — используем INPUT
   - platform: gpio
     pin: 
-      number: GPIO4                   # D2 на Wemos D1 Mini
-      mode: INPUT                     # <-- ИСПРАВЛЕНО: убран INPUT_PULLDOWN
+      number: GPIO4
+      mode: INPUT
       inverted: false
     name: "PIR Motion"
-    device_class: motion              # Иконка движения в HA
+    device_class: motion
     filters:
-      - delayed_off: 5s               # Антидребезг 5 сек
+      - delayed_off: 5s
 
   # --- Статус подключения устройства к сети ---
   - platform: status
     name: "Device Status"
     entity_category: diagnostic
 
-# --- Кнопка перезагрузки из Home Assistant ---
 button:
+  # --- Кнопка перезагрузки из Home Assistant ---
   - platform: restart
     name: "Restart Device"
     entity_category: diagnostic
 
-# --- Сенсоры ---
 sensor:
-  # Время работы с момента включения (timestamp)
+  # --- Время работы с момента включения (в секундах) ---
+  # ⚠️ type: timestamp требует компонент time — убрано для простоты
   - platform: uptime
     name: "Uptime"
-    type: timestamp
+    # type: timestamp        # <-- УБРАНО! Иначе нужен компонент time
+    update_interval: 60s
     entity_category: diagnostic
 
-  # Уровень WiFi сигнала (RSSI)
+  # --- Уровень WiFi сигнала (RSSI) ---
   - platform: wifi_signal
     name: "WiFi Signal"
     update_interval: 60s
     unit_of_measurement: "dBm"
     entity_category: diagnostic
 
-# --- Текстовые сенсоры (информация о сети и прошивке) ---
 text_sensor:
-  # Имя WiFi сети, IP, MAC
+  # --- Информация о WiFi сети ---
   - platform: wifi_info
     ssid:
       name: "WiFi SSID"
@@ -82,16 +72,16 @@ text_sensor:
       name: "MAC Address"
       entity_category: diagnostic
 
-  # Версия ESPHome
+  # --- Версия ESPHome ---
   - platform: version
     name: "ESPHome Version"
     entity_category: diagnostic
 
-  # Версия вашей прошивки (из project.version выше)
+  # --- Версия вашей прошивки ---
   - platform: template
     name: "Firmware Version"
     lambda: |-
-      return {"1.0.1"};               # <-- Обновил версию!
+      return {"1.0.2"};
     update_interval: never
     entity_category: diagnostic
 
